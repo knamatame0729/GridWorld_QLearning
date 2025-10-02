@@ -1,0 +1,17 @@
+program: train.py
+method: bayes
+metric: 
+  goal: maximize
+  name: reward
+parameters:
+  lr:
+    values: [0.1, 0.5]
+  decay_gamma:
+    values: [0.7, 0.99]
+  exp_decay:
+    values: [0.99, 0.999]
+  exp_rate: 
+    values: [0.9]
+  lose_reward:
+    values: [-1, -200]
+project: gridworld_q_learning_run3
