@@ -27,9 +27,13 @@ The agent learns an optimal policy to reach a goal state while avoiding a losing
 https://wandb.ai/site
 
 ## Dependencies
-- Install wandb:
 ```bash
-pip wandb
+python3 -m venv ~/girdworld_qlearning
+source ~/gridworld_qlearning/bin/activate
+```
+- Install Dependencies:
+```bash
+pip install wandb numpu matplotlib
 ```
 
 ## Usage
@@ -37,6 +41,7 @@ Clone this repository
 
 ```bash
 git clone https://github.com/knamatame0729/GridWorld_QLearning.git
+cd GridWorld_QLearning
 ```
 
 ```bash
@@ -52,7 +57,6 @@ wandb agent <sewwp_id> --count 16
 Sample W&B runs and logs:  
 https://wandb.ai/gridworld_qlearning/gridworld_q_learning_run3?nw=nwuserknamatam
 
-## Experiment
 ## Training Details
 | L=-1 | L=-200 |
 |------|--------|
@@ -116,7 +120,7 @@ https://wandb.ai/gridworld_qlearning/gridworld_q_learning_run3?nw=nwuserknamatam
 # Questions
 ## 1) How hyperparameters (learning rate 𝛼, discount factor 𝛾, exploration schedule 𝜀 in case of online learning) affect learning
 
-- Both policy and Q value for reward -200 converge firster
+- Both policy and Q value for reward -200 converge faster
 
 ## 2) Does Q value converge first or the policy converge first?
 
