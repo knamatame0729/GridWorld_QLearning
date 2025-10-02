@@ -1,4 +1,4 @@
-# Gridworld Q-Learning Solution
+# Gridworld Q-Learning Solution (Online)
 
 ## Overview
 This repository contains Q-learning-based solution for the 3x4 Gridworld problem.  
@@ -17,6 +17,10 @@ The agent learns an optimal policy to reach a goal state while avoiding a losing
   - Lose state: -1 or -200
   - Other states : -0.04
 - **Reset** : Episode ends when the agent reaches the goal or lose state
+
+## The online Q-learning algorithm
+
+![alt text](online_qlearning_algo.png)
 
 ## Prerequirement
 - Creat your account W&B  
@@ -47,6 +51,67 @@ wandb agent <sewwp_id> --count 16
 ## Training Logs
 Sample W&B runs and logs:  
 https://wandb.ai/gridworld_qlearning/gridworld_q_learning_run3?nw=nwuserknamatam
+
+## Experiment
+## Training Details
+| L=-1 | L=-200 |
+|------|--------|
+|![alt text](media/avg_reward_L(-1).png)|![alt text](media/avg_reward_L(-200).png)|
+
+
+## Learning Rate : 0.1 | Discoutn Factore : 0.7 | Exploration Rate : 0.1 
+### Exploration Decay : 0.99
+| Lose Reward : -1 | Lose Reward : -200 |
+|--|--|
+|![alt text](media/lr_0.1_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-1.png)|![alt text](media/lr_0.1_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-200.png)|
+|![alt text](media/lr_0.1_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-1_map.png)|![alt text](media/lr_0.1_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-200_map.png)|
+
+
+### Exploration Decay : 0.999
+| Lose Reward : -1 | Lose Reward : -200 |
+|--|--|
+|![alt text](media/lr_0.1_gamma_0.7_exp_decay_0.999_exp_rate_0.1_lose_-1.png)|![alt text](media/lr_0.1_gamma_0.7_exp_decay_0.999_exp_rate_0.1_lose_-200.png)|
+|![alt text](media/lr_0.1_gamma_0.7_exp_decay_0.999_exp_rate_0.1_lose_-1_map.png)|![alt text](media/lr_0.1_gamma_0.7_exp_decay_0.999_exp_rate_0.1_lose_-200_map.png)|
+
+## Learning Rate : 0.1 | Discount Factor : 0.99 | Exploration Rate : 0.1
+### Exploration Decay : 0.99
+| Lose Reward : -1 | Lose Reward : -200 |
+|--|--|
+|![alt text](media/lr_0.1_gamma_0.99_exp_decay_0.99_exp_rate_0.1_lose_-1.png)|![alt text](media/lr_0.1_gamma_0.99_exp_decay_0.99_exp_rate_0.1_lose_-200.png)|
+|![alt text](media/lr_0.1_gamma_0.99_exp_decay_0.99_exp_rate_0.1_lose_-1_map.png)|![alt text](media/lr_0.1_gamma_0.99_exp_decay_0.99_exp_rate_0.1_lose_-200_map.png)|
+
+### Exploration Decay : 0.999
+| Lose Reward : -1 | Lose Reward : -200 |
+|--|--|
+|![alt text](media/lr_0.1_gamma_0.99_exp_decay_0.999_exp_rate_0.1_lose_-1.png)|![alt text](media/lr_0.1_gamma_0.99_exp_decay_0.999_exp_rate_0.1_lose_-200.png)|
+|![alt text](media/lr_0.1_gamma_0.99_exp_decay_0.999_exp_rate_0.1_lose_-1_map.png)|![alt text](media/lr_0.1_gamma_0.99_exp_decay_0.999_exp_rate_0.1_lose_-200_map.png)|
+
+## Learning Rate : 0.5 | Discount Factor : 0.7 | Exploration Rate : 0.1
+### Exploratino Decay : 0.99
+| Lose Reward : -1 | Lose Reward : -200 |
+|--|--|
+|![alt text](media/lr_0.5_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-1.png)|![alt text](media/lr_0.5_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-200.png)|
+|![alt text](media/lr_0.5_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-1_map.png)|![alt text](media/lr_0.5_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-200_map.png)|
+
+### Exploration Decay : 0.999
+| Lose Reward : -1 | Lose Reward : -200 |
+|--|--|
+|![alt text](media/lr_0.5_gamma_0.7_exp_decay_0.999_exp_rate_0.1_lose_-1.png)|![alt text](media/lr_0.5_gamma_0.7_exp_decay_0.999_exp_rate_0.1_lose_-200.png)|
+|![alt text](media/lr_0.5_gamma_0.7_exp_decay_0.999_exp_rate_0.1_lose_-1_map.png)|![alt text](media/lr_0.5_gamma_0.7_exp_decay_0.999_exp_rate_0.1_lose_-200_map.png)|
+
+## Learning Rate : 0.5 | Discount Factor : 0.99 | Exploration Rate : 0.1
+### Exploration Decay : 0.99
+| Lose Reward : -1 | Lose Reward : -200 |
+|--|--|
+|![alt text](media/lr_0.5_gamma_0.99_exp_decay_0.99_exp_rate_0.1_lose_-1.png)|![alt text](media/lr_0.5_gamma_0.99_exp_decay_0.99_exp_rate_0.1_lose_-200.png)|
+|![alt text](media/lr_0.5_gamma_0.99_exp_decay_0.99_exp_rate_0.1_lose_-1_map.png)|![alt text](media/lr_0.5_gamma_0.99_exp_decay_0.99_exp_rate_0.1_lose_-200_map.png)|
+
+### Exploration Decay : 0.999
+| Lose Reward : -1 | Lose Reward : -200 |
+|--|--|
+|![alt text](media/lr_0.5_gamma_0.99_exp_decay_0.999_exp_rate_0.1_lose_-1.png)|![alt text](media/lr_0.5_gamma_0.99_exp_decay_0.999_exp_rate_0.1_lose_-200.png)|
+|![alt text](media/lr_0.5_gamma_0.99_exp_decay_0.999_exp_rate_0.1_lose_-1_map.png)|![alt text](media/lr_0.5_gamma_0.99_exp_decay_0.999_exp_rate_0.1_lose_-200.png.png)|
+
 
 # Questions
 ## 1) How hyperparameters (learning rate 𝛼, discount factor 𝛾, exploration schedule 𝜀 in case of online learning) affect learning
