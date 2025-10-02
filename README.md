@@ -16,7 +16,7 @@ The agent learns an optimal policy to reach a goal state while avoiding a losing
   - Goal state : + 1
   - Lose state: -1 or -200
   - Other states : -0.04
-- Reset : Episode ends when the agent reaches the goal or lose state
+- **Reset** : Episode ends when the agent reaches the goal or lose state
 
 ## Prerequirement
 - Creat your account W&B  
@@ -50,6 +50,8 @@ https://wandb.ai/gridworld_qlearning/gridworld_q_learning_run3?nw=nwuserknamatam
 
 # Questions
 ## 1) How hyperparameters (learning rate 𝛼, discount factor 𝛾, exploration schedule 𝜀 in case of online learning) affect learning
+
+- Both policy and Q value for reward -200 converge firster
 
 ## 2) Does Q value converge first or the policy converge first?
 

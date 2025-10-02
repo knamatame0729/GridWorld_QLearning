@@ -6,7 +6,7 @@ import wandb                      # needed for tracking metrics
 wandb.login()
 
 # Project name for W&B
-project = "gridworld_q_learning_run3"
+project = "gridworld_q_learning_run"
 
 # Grid World setting
 ROWS, COLS = 3, 4      # number of rows and columns
@@ -108,7 +108,7 @@ class Agent:
         self.actions = ["up", "down", "left", "right"]  # actions
         self.State = State()                            # initialize environment state
         self.lr = 0.1                                   # learning rate
-        self.exp_rate = 1.0                             # exploration rate
+        self.exp_rate = 0.1                             # exploration rate
         self.decay_gamma = 0.9                          # discount factor
         self.exp_decay = 0.995                          # epsilon decay per episode
         self.min_exp_rate = 0.01                        # miminum epsilon
@@ -170,14 +170,16 @@ class Agent:
 
     def chooseAction(self):
         """
-        Choose action using epsilon-greedy
+        Select action using epsilon-greedy:
+        - pick random feasible action with probabiliry ε
+        - pick action = arg max(Q(s, a)) with probability (1-ε)
         """
-        if np.random.uniform(0,1) <= self.exp_rate:
+        if np.random.uniform(0,1) < self.exp_rate:
             return np.random.choice(self.actions)
-
-        qvals = self.Q_values[self.State.state]
-
-        return max(qvals, key=qvals.get)
+        else:
+            qvals = self.Q_values[self.State.state]
+            return max(qvals, key=qvals.get)
+        
 
     def takeAction(self, action):
         """
@@ -230,7 +232,7 @@ class Agent:
                     target = r + self.decay_gamma * max(self.Q_values[s_next].values())
                 self.Q_values[s][a] += self.lr * (target - self.Q_values[s][a])
             
-            # Record episode metrics
+            # Record metrics
             self.episode_rewards.append(episode_reward)
             self.episode_steps.append(steps)
             self.q_deltas.append(self.q_delta())
@@ -381,8 +383,14 @@ def main():
         "episodes": NUM_EPISODES
     })
 
-    # Train the agent
+    ################################################
+    #      Train the agent (for NUM_EPISODES)      #
+    ################################################
     agent.train(NUM_EPISODES)
+
+    ################################################
+    #          After finishiing training           #
+    ################################################
 
     # Compute the final average reward over last 200 episodes
     # Using last 100 rewards becasue the agent has already learned most of its policy by then

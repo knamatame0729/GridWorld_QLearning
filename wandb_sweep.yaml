@@ -1,5 +1,5 @@
 program: train.py
-method: bayes
+method: grid
 metric: 
   goal: maximize
   name: reward
@@ -11,7 +11,7 @@ parameters:
   exp_decay:
     values: [0.99, 0.999]
   exp_rate: 
-    values: [0.9]
+    values: [0.1]
   lose_reward:
     values: [-1, -200]
-project: gridworld_q_learning_run3
+project: gridworld_q_learning_run
