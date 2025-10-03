@@ -33,7 +33,7 @@ source ~/gridworld_qlearning/bin/activate
 ```
 - Install Dependencies:
 ```bash
-pip install wandb numpu matplotlib
+pip install wandb numpy matplotlib
 ```
 
 ## Usage
@@ -55,7 +55,7 @@ wandb agent <sewwp_id> --count 16
 
 ## Training Logs
 Sample W&B runs and logs:  
-https://wandb.ai/gridworld_qlearning/gridworld_q_learning_run3?nw=nwuserknamatam
+https://wandb.ai/gridworld_qlearning/gridworld_q_learning_run
 
 ## Training Details
 | L=-1 | L=-200 |
@@ -120,7 +120,26 @@ https://wandb.ai/gridworld_qlearning/gridworld_q_learning_run3?nw=nwuserknamatam
 # Questions
 ## 1) How hyperparameters (learning rate 𝛼, discount factor 𝛾, exploration schedule 𝜀 in case of online learning) affect learning
 
-- Both policy and Q value for reward -200 converge faster
+**1. The learning rate**  
+
+- [Learning Rate : 0.9](https://github.com/knamatame0729/GridWorld_QLearning/blob/main/media/lr_0.-5_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-1.png)  
+ Reward
+- [Learning Rate : 0.6](https://github.com/knamatame0729/GridWorld_QLearning/blob/main/media/lr_0.1_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-1.png)  
+- [Learning Rate : 0.05]()   
+ Q-value is smoothly updated
+ Policy is slowly converged
+
+
+    the higher Learning Rate makes Q-values update more aggressively and lower laerning rate makes Q-values update smoothly.  
+    It takes extra steps when the agent is learning 
+
+- The discount factor :  
+Compare with [Discount Factor : 0.09](media/lr_0.1_gamma_0.99_exp_decay_0.99_exp_rate_0.1_lose_-1.png) and [Discount Factor : 0.7](), Q-value converge faster with smaller discount factor. Policy converges slower with smaller discount factor, because the agent undervalues future rewards, so optimal actions for distant states take longer to stabilize. As the agent takes longer paths to reach the goal, episode steps are higher with smaller discount factor.
+
+- The epsilon shedule :  
+Compare with [Epsilon Decay Factor : 0.999](media/lr_0.1_gamma_0.7_exp_decay_0.999_exp_rate_0.1_lose_-1.png) and [Epsilon Decay Factor : 0.99](media/lr_0.1_gamma_0.7_exp_decay_0.99_exp_rate_0.1_lose_-1.png), larger factor is slower convergence of reward, steps, and policy in early learning. Smaller factor is faster convergence, but too lillte exploration may prevent the agent from discovering from the optimal paths
+
+
 
 ## 2) Does Q value converge first or the policy converge first?
 

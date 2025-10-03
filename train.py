@@ -1,12 +1,13 @@
 import numpy as np                # needed for numerica computaion
 import matplotlib.pyplot as plt   # needed for plotting
 import wandb                      # needed for tracking metrics
+from datetime import datetime
 
 # Log in to W&B
 wandb.login()
 
 # Project name for W&B
-project = "gridworld_q_learning_run"
+project = f"gridworld_q_learning_run4"
 
 # Grid World setting
 ROWS, COLS = 3, 4      # number of rows and columns
@@ -174,7 +175,9 @@ class Agent:
         - pick random feasible action with probabiliry ε
         - pick action = arg max(Q(s, a)) with probability (1-ε)
         """
-        if np.random.uniform(0,1) < self.exp_rate:
+        if self.State.isEnd:
+            return None
+        elif np.random.uniform(0,1) < self.exp_rate:
             return np.random.choice(self.actions)
         else:
             qvals = self.Q_values[self.State.state]
@@ -185,16 +188,18 @@ class Agent:
         """
         Take action and return new state
         """
-        position = self.State.move(action)
-        return State(state=position, lose_reward=self.lose_reward)
+        if action is None:
+          return self.State
+        new_position = self.State.move(action)
+        self.State.state = new_position
+        self.State.isEndFunc()
+        return self.State
 
     def reset(self):
         """
         Reset environment for new episode
         """
         self.State = State(lose_reward=self.lose_reward)
-        self.State.isEndFunc()
-        self.isEnd = self.State.isEnd
 
     def train(self, num_episodes=NUM_EPISODES):
         """
@@ -210,7 +215,7 @@ class Agent:
             episode_reward = 0
             steps = 0
 
-            while not self.isEnd:
+            while not self.State.isEnd:
                 # Current state and chosen action
                 s = self.State.state
                 a = self.chooseAction()
@@ -219,14 +224,12 @@ class Agent:
                 self.State = self.takeAction(a)
                 s_next = self.State.state
                 r = self.State.reward()
-                self.State.isEndFunc()
-                self.isEnd = self.State.isEnd
 
                 episode_reward += r
                 steps += 1
 
                 # Q-learning update
-                if self.isEnd:
+                if self.State.isEndFunc():
                     target = r    # Terminal state (no future reward)
                 else:
                     target = r + self.decay_gamma * max(self.Q_values[s_next].values())
