@@ -148,6 +148,80 @@ class Agent:
         self.min_exp_rate = 0.01                        # miminum epsilon
         self.lose_reward = lose_reward                  # reward for losing
 
+        self.memory = deque(maxlen=10000)               # replay buffer size
+        self.batch_size = 64                            # batch size
+        self.target_updata_freq = 100                   # target network update frequency
+
+        # Neural network initializaiton
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        input_dim = ROW * COLS
+        output_dim = len(self.actions)
+        self.policy_net = DQN(input_dim, output_dim).to(self.device)
+        self.target_net = DQN(input_dim, output_dim).to(self.device)
+        
+    def state_to_tensor(self, state):
+        i, j = state
+        state_flat = i * COLS + j
+        state_one_hot = np.zeros(ROWS * COLS)
+        state_one_hot[state_flat] = 1
+        return torch.FloatTensor(state_one_hot).to(self.device)
+
+    def chooseAction(self, epsilon=None):
+        """
+        Choose actions using ε-greedy
+        If epsilon value is defined, use it. Otherwise, use exp_rate for epsilon
+        """
+        if self.State.isEnd:
+            # If the agent hit terminate, return None
+            return None
+
+        # If epsilon value is defined, use it otherwise use exp_rate for epsilon
+        current_epsilon = epsilon if epsilon is not None else self.exp_rate
+
+        # Choose an action using the epsilon-greedy strategy
+        if np.random.uniform(0, 1) < current_epsilon:
+            # with probability epsilon, choose a random action (exploration)
+            return np.random.choice(self.actions)
+        else:
+            # Otherwise, choose the best action to teh Q-network (exploit)
+            state_tensor = self.state_to_tensor(self.State.state)
+            with torch.no_grad():
+                q_values = self.policy_net(state_tensor)
+            return self.actions[torch.argmax(q_values).item()]
+
+    def takeAction(self, action):
+        """
+        Execute the given action and return the new state
+        """
+        if action is None:
+            # If no action is given, return the current state
+            return self.State
+        # Compute the new position after taking the action
+        new_position = self.State.move(action)
+        # Update the internal state with the new posiion
+        self.State.state = new_position
+        # Check whether the new state is a terminal state
+        self.State.isEndFunc()
+        # Return the updated state
+        return self.State
+
+    def learn(self):
+        if len(self.memory) < self.batch_size:
+            return None
+        
+        batch = random.sample(self.memroy, self.batch_size)
+        states, actions, rewards, next_states, dones = zip(*batch)
+
+        states = torch.stack(states)
+        actions = torch.LongTensor(actions).to(self.device)
+        rewards = torch.FloatTensor(rewards).to(self.device)
+        next_states = torch.stack(next_states)
+        dones = torch.FloatTensor(dones).to(self.device)
+
+        # Compute Q-values for current states
+        q_values = policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+
+        
     def train(self, NUM_EPISODES):
         """
         TODO: implement training
