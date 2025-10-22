@@ -4,6 +4,8 @@ import wandb
 from datetime import datetime
 import torch
 import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
 
 # Log in to W&B
 wandb.login()
@@ -121,17 +123,16 @@ class DQN(nn.Module):
         output_dim (int): Number of actions (action space)
     """
     def __init__(self, input_dim, output_dim):
-        super().__init__()
-        self.model = nn.Sequential(
-            nn.Linear(input_dim, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, output_dim)
-        )
+        super(DQN, self).__init__()
+        self.layer1 = nn.Linear(input_dim, 64),
+        self.layer2 = nn.Linear(64, 64),
+        self.layer3 = nn.Linear(64, output_dim)
+        
 
     def forward(self, x):
-        return self.model(x)
+        x = F.relu(self.layer1(x))
+        x = F.relu(self.layer2(x))
+        return self.layer3(x)
 
 
 class Agent:
@@ -158,12 +159,31 @@ class Agent:
         output_dim = len(self.actions)
         self.policy_net = DQN(input_dim, output_dim).to(self.device)
         self.target_net = DQN(input_dim, output_dim).to(self.device)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
+        self.,loss_fn = nn.SmoothL1Loss()                                           # Huber loss for better handling outliers
         
+        self.episode_rewards = []
+        self.episode_steps = []
+        self.losses = []
+
     def state_to_tensor(self, state):
+        """
+        Convert the environment state (i, j) into a one-hot encoded tensor.
+        This allows the neural network to process discreate grid positions as input
+        """
+        # Unpack the 2D state coordinates (row, column)
         i, j = state
+
+        # Convert the 2D state position into a single flat index
         state_flat = i * COLS + j
+
+        # Initialize a zero vector of length ROWS * COLS
         state_one_hot = np.zeros(ROWS * COLS)
+
+        # Set the element corresponding to the current position to 1
         state_one_hot[state_flat] = 1
+
+        # Convert the numpy array to a pytorch tensor and move it to the device (CPU/GPU)
         return torch.FloatTensor(state_one_hot).to(self.device)
 
     def chooseAction(self, epsilon=None):
@@ -204,13 +224,28 @@ class Agent:
         self.State.isEndFunc()
         # Return the updated state
         return self.State
+    
+    def store_transition(self, state, action, reward, next_state, done):
+        """
+        Store one experience (state, action, reward, next_state, done) in replay memory
+        Each trasnsition represents one step in the environment
+        """
+        # Convert current and next states into one-hot encoded tenosors
+        state_tensor = self.state_to_tensor(state)
+        next_state_tensor = self.state_to_tensor(next_state)
+        # Convert actin into index
+        action_idx = self.actions.index(action)
+        # Append the experience tuple to memory
+        self.memory.append((state_tenosor, action_idx, reward, next_state_tensor, done))
 
     def learn(self):
+        # If not enough experiences in memory, skip learning
         if len(self.memory) < self.batch_size:
             return None
         
+        # Randomly sample a batch of transitions (state, action, reward, next_state, done)
         batch = random.sample(self.memroy, self.batch_size)
-        states, actions, rewards, next_states, dones = zip(*batch)
+        states, actions, rewards, next_states, dones = zip(*batch)   # Unpack
 
         states = torch.stack(states)
         actions = torch.LongTensor(actions).to(self.device)
@@ -220,6 +255,21 @@ class Agent:
 
         # Compute Q-values for current states
         q_values = policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+
+        next_q_values = self.target_net(next_states).max(1)[0].detach()
+        target_q_values = rewards + (1 - dones) * self.decay_gamma * next_q_values
+
+        loss = self.loss_fn(current_q_values, target_q_values)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        return loss.item()
+
+    def reset(self):
+        """
+        Reset environment for new episode
+        """
+        self.State = State(lose_reward=self.lose_reward)
 
         
     def train(self, NUM_EPISODES):
