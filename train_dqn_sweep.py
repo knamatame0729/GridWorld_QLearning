@@ -8,13 +8,12 @@ import torch.optim as optim
 import torch.nn.functional as F
 from collections import deque
 import random
-import seaborn as sns
 
 # Log in to W&B
 wandb.login()
 
 # Project name for W&B
-project = f"gridworld_dqn"
+project = f"gridworld_dqn_sweep"
 
 # ============ Grid World setting ===========
 ROWS, COLS = 3, 4      # number of rows and columns
@@ -24,17 +23,10 @@ START = (2,0)          # start state coordinates
 WALL = (1,1)           # wall state coordinates
 
 NUM_EPISODES = 1500     # number of training episodes
-EVAL_EPISODES = 10     # number of evaluation episodes
+EVAL_EPISODES = 50     # number of evaluation episodes
 
 GOAL_REWARD = 1        # Reward for reachign goal
 LOSE_REWARD = -1       # Penalty for reaching lose
-
-# ============= Hyperparameters =============
-LEARNING_RATE = 3e-4   # Learning Rate
-DISCOUNT_FACTOR = 0.99 # Discount Factor
-EPSILON_DECAY = 0.999  # Epsilon decay factor
-EPSILON_RATE = 0.9     # Epsilon Rate
-BATCH_SIZE = 128        # Mini-Batch size for replay memory
 
 
 class State:
@@ -146,18 +138,18 @@ class Agent:
     """
     DQN Agent
     """
-    def __init__(self):
+    def __init__(self, config):
         self.actions = ["up", "down", "left", "right"]  # actions
         self.State = State()                            # initialize environment state
-        self.lr = LEARNING_RATE                         # learning rate
-        self.exp_rate = EPSILON_RATE                    # exploration rate
-        self.decay_gamma = DISCOUNT_FACTOR              # discount factor
-        self.exp_decay = EPSILON_DECAY                  # epsilon decay per episode
+        self.lr = config.learning_rate                  # learning rate
+        self.exp_rate = config.epsilon_rate             # exploration rate
+        self.gamma = config.gamma                       # discount factor
+        self.exp_decay = config.epsilon_decay           # epsilon decay per episode
         self.min_exp_rate = 0.01                        # miminum epsilon
 
-        self.memory = deque(maxlen=1000)               # replay buffer size
-        self.batch_size = BATCH_SIZE                    # batch size
-        self.target_update_freq = 100                   # target network update frequency
+        self.memory = deque(maxlen=1000)                # replay buffer size
+        self.batch_size = config.batch_size             # batch size
+        self.target_update_freq = 10                    # target network update frequency
 
         # Neural network initializaiton
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -271,7 +263,7 @@ class Agent:
         next_q_values = self.target_net(next_states).max(1)[0].detach()
 
         # Apply the Bellman equation
-        target_q_values = rewards + (1 - dones) * self.decay_gamma * next_q_values
+        target_q_values = rewards + (1 - dones) * self.gamma * next_q_values
 
         # Compute the loss between predicted Q-values and target Q-values
         loss = self.loss_fn(q_values, target_q_values)
@@ -300,7 +292,6 @@ class Agent:
         step_count = 0
 
         for i in range(num_episodes):
-            
 
             # Reset the env to the initial state
             self.reset()
@@ -356,8 +347,7 @@ class Agent:
                 "epsilon": self.exp_rate,
                 "loss": loss,
                 "train success": success,
-                "avg_train_reward": np.mean(self.episode_rewards),
-                "avg_train_success": np.mean(self.episode_successes)
+                "avg_train_reward": np.mean(self.episode_rewards)
             })
             
             else:
@@ -518,33 +508,20 @@ def main():
     """
     Main training and evaluation
     """
-    # Hyperparameters
-    config = {
-        "learning_rate": LEARNING_RATE,
-        "gamma": DISCOUNT_FACTOR,
-        "epsilon_decay": EPSILON_DECAY,
-        "epsilon_rate": EPSILON_RATE,
-        "episodes": NUM_EPISODES,
-        "lose_reward": LOSE_REWARD
-    }
 
     # Initialize W&B
-    wandb.init(project=project, config=config)
+    wandb.init(project=project)
     config = wandb.config
 
-    run_name = f"learning_rate_{config.learning_rate}_gamma_{config.gamma}_epsilon_decay_{config.epsilon_decay}_epsilon_rate_{config.epsilon_rate}"
+    run_name = f"learning_rate_{config.learning_rate}_gamma_{config.gamma}_epsilon_decay_{config.epsilon_decay}_epsilon_rate_{config.epsilon_rate}_batch_size_{config.batch_size}"
     
     wandb.run.name = run_name
 
-    # Create Q-Learning agent and set hyperparameters from the configration
-    agent = Agent()
-    agent.lr = config.learning_rate
-    agent.decay_gamma = config.gamma
-    agent.exp_decay = config.epsilon_decay
-    agent.exp_rate = config.epsilon_rate
+    # Create Q-Learning agent
+    agent = Agent(config)
 
     # Train
-    agent.train(config.episodes)
+    agent.train(num_episodes=NUM_EPISODES)
 
     # Evalate
     agent.evaluate()
