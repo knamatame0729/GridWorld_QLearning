@@ -13,7 +13,7 @@ import random
 wandb.login()
 
 # Project name for W&B
-project = f"gridworld_dqn_sweep"
+project = f"gridworld_dqn_sweep_4"
 
 # ============ Grid World setting ===========
 ROWS, COLS = 3, 4      # number of rows and columns
@@ -513,7 +513,7 @@ def main():
     wandb.init(project=project)
     config = wandb.config
 
-    run_name = f"learning_rate_{config.learning_rate}_gamma_{config.gamma}_epsilon_decay_{config.epsilon_decay}_epsilon_rate_{config.epsilon_rate}_batch_size_{config.batch_size}"
+    run_name = f"learning_rate_{config.learning_rate}_gamma_{config.gamma}_epsilon_decay_{config.epsilon_decay}_epsilon_rate_{config.epsilon_rate}"
     
     wandb.run.name = run_name
 

@@ -14,7 +14,7 @@ import seaborn as sns
 wandb.login()
 
 # Project name for W&B
-project = f"gridworld_dqn"
+project = f"gridworld_dqn_1"
 
 # ============ Grid World setting ===========
 ROWS, COLS = 3, 4      # number of rows and columns
@@ -24,15 +24,15 @@ START = (2,0)          # start state coordinates
 WALL = (1,1)           # wall state coordinates
 
 NUM_EPISODES = 1500     # number of training episodes
-EVAL_EPISODES = 10     # number of evaluation episodes
+EVAL_EPISODES = 500     # number of evaluation episodes
 
 GOAL_REWARD = 1        # Reward for reachign goal
 LOSE_REWARD = -1       # Penalty for reaching lose
 
 # ============= Hyperparameters =============
-LEARNING_RATE = 3e-4   # Learning Rate
+LEARNING_RATE = 3e-1   # Learning Rate
 DISCOUNT_FACTOR = 0.99 # Discount Factor
-EPSILON_DECAY = 0.999  # Epsilon decay factor
+EPSILON_DECAY = 0.995  # Epsilon decay factor
 EPSILON_RATE = 0.9     # Epsilon Rate
 BATCH_SIZE = 128        # Mini-Batch size for replay memory
 
@@ -157,7 +157,7 @@ class Agent:
 
         self.memory = deque(maxlen=1000)               # replay buffer size
         self.batch_size = BATCH_SIZE                    # batch size
-        self.target_update_freq = 100                   # target network update frequency
+        self.target_update_freq = 10                   # target network update frequency
 
         # Neural network initializaiton
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

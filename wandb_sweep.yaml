@@ -5,13 +5,13 @@ metric:
   name: avg_eval_reward
 parameters:
   learning_rate:
-    values: [1e-4, 3e-4, 5e-4]
+    values: [1e-4]
   gamma:
-    values: [0.95, 0.99]
+    values: [0.99]
   epsilon_decay:
-    values: [0.99, 0.995, 0.999]
+    values: [0.95]
   epsilon_rate: 
-    values: [0.5, 0.9]
+    values: [0.5, 1.0]
   batch_size:
-    values: [32, 64, 128]
-project: gridworld_dqn_sweep
+    values: [128]
+project: gridworld_dqn_sweep_4
