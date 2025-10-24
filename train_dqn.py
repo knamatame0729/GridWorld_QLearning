@@ -546,6 +546,11 @@ def main():
     # Train
     agent.train(config.episodes)
 
+    # # Compute the final average reward over last 200 episodes
+    # Using last 100 rewards becasue the agent has already learned most of its policy by then
+    avg_train_reward = np.mean(agent.episode_rewards[-200])
+    wandb.log({f"avg_train_reward_200": avg_reward})
+
     # Evalate
     agent.evaluate()
 
