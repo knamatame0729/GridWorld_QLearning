@@ -12,9 +12,6 @@ import random
 # Log in to W&B
 wandb.login()
 
-# Project name for W&B
-project = f"gridworld_dqn_sweep_4"
-
 # ============ Grid World setting ===========
 ROWS, COLS = 3, 4      # number of rows and columns
 WIN_STATE = (0,3)      # goal state coordinates
@@ -23,7 +20,7 @@ START = (2,0)          # start state coordinates
 WALL = (1,1)           # wall state coordinates
 
 NUM_EPISODES = 1500     # number of training episodes
-EVAL_EPISODES = 50     # number of evaluation episodes
+EVAL_EPISODES = 100     # number of evaluation episodes
 
 GOAL_REWARD = 1        # Reward for reachign goal
 LOSE_REWARD = -1       # Penalty for reaching lose
@@ -338,8 +335,21 @@ class Agent:
 
             self.exp_rate = max(self.min_exp_rate, self.exp_rate * self.exp_decay)
 
+            if i >= 1300:
+                wandb.log({
+                "episode": i,
+                "reward": episode_reward,
+                "steps": steps,
+                "epsilon": self.exp_rate,
+                "loss": loss,
+                "train success": success,
+                "avg_train_reward": np.mean(self.episode_rewards),
+                "avg_train_reward_200": np.mean(self.episode_rewards[-200:])
+            })
+            
+
             # Log to wandb
-            if loss is not None:
+            elif loss is not None:
                 wandb.log({
                 "episode": i,
                 "reward": episode_reward,
@@ -513,7 +523,7 @@ def main():
     wandb.init(project=project)
     config = wandb.config
 
-    run_name = f"learning_rate_{config.learning_rate}_gamma_{config.gamma}_epsilon_decay_{config.epsilon_decay}_epsilon_rate_{config.epsilon_rate}"
+    run_name = f"learning_rate_{config.learning_rate}_gamma_{config.gamma}_epsilon_decay_{config.epsilon_decay}_epsilon_rate_{config.epsilon_rate}_batch_size_{config.batch_size}"
     
     wandb.run.name = run_name
 
@@ -522,6 +532,10 @@ def main():
 
     # Train
     agent.train(num_episodes=NUM_EPISODES)
+
+    # Compute the final average reward over last 200 episodes
+    # Using last 100 rewards becasue the agent has already learned most of its policy by then
+    
 
     # Evalate
     agent.evaluate()

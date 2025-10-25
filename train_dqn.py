@@ -348,7 +348,7 @@ class Agent:
             self.exp_rate = max(self.min_exp_rate, self.exp_rate * self.exp_decay)
 
             # Log to wandb
-            if loss is not None:
+            if i >= 1300:
                 wandb.log({
                 "episode": i,
                 "reward": episode_reward,
@@ -357,7 +357,20 @@ class Agent:
                 "loss": loss,
                 "train success": success,
                 "avg_train_reward": np.mean(self.episode_rewards),
-                "avg_train_success": np.mean(self.episode_successes)
+                "avg_train_reward_200": np.mean(self.episode_rewards[-200:])
+            })
+            
+
+            # Log to wandb
+            elif loss is not None:
+                wandb.log({
+                "episode": i,
+                "reward": episode_reward,
+                "steps": steps,
+                "epsilon": self.exp_rate,
+                "loss": loss,
+                "train success": success,
+                "avg_train_reward": np.mean(self.episode_rewards)
             })
             
             else:
@@ -546,7 +559,7 @@ def main():
     # Train
     agent.train(config.episodes)
 
-    # # Compute the final average reward over last 200 episodes
+    # Compute the final average reward over last 200 episodes
     # Using last 100 rewards becasue the agent has already learned most of its policy by then
     avg_train_reward = np.mean(agent.episode_rewards[-200])
     wandb.log({f"avg_train_reward_200": avg_reward})
