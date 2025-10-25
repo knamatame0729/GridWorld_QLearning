@@ -24,17 +24,17 @@ START = (2,0)          # start state coordinates
 WALL = (1,1)           # wall state coordinates
 
 NUM_EPISODES = 1500     # number of training episodes
-EVAL_EPISODES = 500     # number of evaluation episodes
+EVAL_EPISODES = 1000     # number of evaluation episodes
 
 GOAL_REWARD = 1        # Reward for reachign goal
 LOSE_REWARD = -1       # Penalty for reaching lose
 
 # ============= Hyperparameters =============
-LEARNING_RATE = 3e-1   # Learning Rate
+LEARNING_RATE = 1e-3   # Learning Rate
 DISCOUNT_FACTOR = 0.99 # Discount Factor
-EPSILON_DECAY = 0.995  # Epsilon decay factor
-EPSILON_RATE = 0.9     # Epsilon Rate
-BATCH_SIZE = 128        # Mini-Batch size for replay memory
+EPSILON_DECAY = 0.999  # Epsilon decay factor
+EPSILON_RATE = 1.0     # Epsilon Rate
+BATCH_SIZE = 128       # Mini-Batch size for replay memory
 
 
 class State:
@@ -558,11 +558,6 @@ def main():
 
     # Train
     agent.train(config.episodes)
-
-    # Compute the final average reward over last 200 episodes
-    # Using last 100 rewards becasue the agent has already learned most of its policy by then
-    avg_train_reward = np.mean(agent.episode_rewards[-200])
-    wandb.log({f"avg_train_reward_200": avg_reward})
 
     # Evalate
     agent.evaluate()
