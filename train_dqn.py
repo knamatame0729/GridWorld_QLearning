@@ -14,7 +14,7 @@ import seaborn as sns
 wandb.login()
 
 # Project name for W&B
-project = f"gridworld_dqn_1"
+project = f"gridworld_dqn"
 
 # ============ Grid World setting ===========
 ROWS, COLS = 3, 4      # number of rows and columns
@@ -24,7 +24,7 @@ START = (2,0)          # start state coordinates
 WALL = (1,1)           # wall state coordinates
 
 NUM_EPISODES = 1500     # number of training episodes
-EVAL_EPISODES = 1000     # number of evaluation episodes
+EVAL_EPISODES = 200     # number of evaluation episodes
 
 GOAL_REWARD = 1        # Reward for reachign goal
 LOSE_REWARD = -1       # Penalty for reaching lose
@@ -169,6 +169,9 @@ class Agent:
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
         self.loss_fn = nn.SmoothL1Loss()                                           # Huber loss for better handling outliers
         
+        self.avg_q_value = 0
+        self.avg_target_q_value = 0
+
         self.episode_rewards = []
         self.episode_steps = []
         self.losses = []
@@ -281,6 +284,9 @@ class Agent:
         loss.backward()                  # Compute new gradients
         self.optimizer.step()            # Update network parameters
 
+        self.avg_q_value = q_values.mean().item()
+        self.avg_target_q_value = target_q_values.mean().item()
+
         # Return the scalar loss value of logging
         return loss.item()
 
@@ -357,7 +363,9 @@ class Agent:
                 "loss": loss,
                 "train success": success,
                 "avg_train_reward": np.mean(self.episode_rewards),
-                "avg_train_reward_200": np.mean(self.episode_rewards[-200:])
+                "avg_train_reward_200": np.mean(self.episode_rewards[-200:]),
+                "avg_q_value": self.avg_q_value,
+                "avg_target_q_value": self.avg_target_q_value
             })
             
 
@@ -370,7 +378,9 @@ class Agent:
                 "epsilon": self.exp_rate,
                 "loss": loss,
                 "train success": success,
-                "avg_train_reward": np.mean(self.episode_rewards)
+                "avg_train_reward": np.mean(self.episode_rewards),
+                "avg_q_value": self.avg_q_value,
+                "avg_target_q_value": self.avg_target_q_value
             })
             
             else:
@@ -380,7 +390,9 @@ class Agent:
                 "steps": steps,
                 "epsilon": self.exp_rate,
                 "train success": success,
-                "avg_train_reward": np.mean(self.episode_rewards)
+                "avg_train_reward": np.mean(self.episode_rewards),
+                "avg_q_value": self.avg_q_value,
+                "avg_target_q_value": self.avg_target_q_value
             })
 
 
