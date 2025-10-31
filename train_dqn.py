@@ -8,12 +8,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 from collections import deque
 import random
-import seaborn as sns
 
-# Log in to W&B
+# =================== W&B ===================
 wandb.login()
-
-# Project name for W&B
 project = f"gridworld_dqn"
 
 # ============ Grid World setting ===========
@@ -30,11 +27,16 @@ GOAL_REWARD = 1        # Reward for reachign goal
 LOSE_REWARD = -1       # Penalty for reaching lose
 
 # ============= Hyperparameters =============
-LEARNING_RATE = 1e-3   # Learning Rate
-DISCOUNT_FACTOR = 0.99 # Discount Factor
-EPSILON_DECAY = 0.999  # Epsilon decay factor
-EPSILON_RATE = 1.0     # Epsilon Rate
-BATCH_SIZE = 128       # Mini-Batch size for replay memory
+LEARNING_RATE = 1e-3
+GAMMA = 0.99
+EPSILON_START = 1.0
+EPSILON_END = 0.01
+EPSILON_DECAY = 0.999
+BATCH_SIZE = 128
+BUFFER_SIZE = 1000
+TARGET_UPDATE_FREQ = 10
+HIDDEN_SIZE = 64
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class State:
@@ -131,9 +133,9 @@ class DQN(nn.Module):
     """
     def __init__(self, input_dim, output_dim):
         super(DQN, self).__init__()
-        self.layer1 = nn.Linear(input_dim, 64)
-        self.layer2 = nn.Linear(64, 64)
-        self.layer3 = nn.Linear(64, output_dim)
+        self.layer1 = nn.Linear(input_dim, HIDDEN_SIZE)
+        self.layer2 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
+        self.layer3 = nn.Linear(HIDDEN_SIZE, output_dim)
         
 
     def forward(self, x):
@@ -149,24 +151,23 @@ class Agent:
     def __init__(self):
         self.actions = ["up", "down", "left", "right"]  # actions
         self.State = State()                            # initialize environment state
-        self.lr = LEARNING_RATE                         # learning rate
-        self.exp_rate = EPSILON_RATE                    # exploration rate
-        self.decay_gamma = DISCOUNT_FACTOR              # discount factor
-        self.exp_decay = EPSILON_DECAY                  # epsilon decay per episode
-        self.min_exp_rate = 0.01                        # miminum epsilon
 
-        self.memory = deque(maxlen=1000)               # replay buffer size
-        self.batch_size = BATCH_SIZE                    # batch size
-        self.target_update_freq = 10                   # target network update frequency
+        # Epsilon
+        self.epsilon = EPSILON_START
 
-        # Neural network initializaiton
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # Replay Buffer
+        self.memory = deque(maxlen=BUFFER_SIZE)               # replay buffer size
+
         input_dim = ROWS * COLS
         output_dim = len(self.actions)
-        self.policy_net = DQN(input_dim, output_dim).to(self.device)
-        self.target_net = DQN(input_dim, output_dim).to(self.device)
+
+        # Networks
+        self.policy_net = DQN(input_dim, output_dim).to(DEVICE)
+        self.target_net = DQN(input_dim, output_dim).to(DEVICE)
         self.target_net.load_state_dict(self.policy_net.state_dict())
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
+
+        # Optimizer
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=LEARNING_RATE)
         self.loss_fn = nn.SmoothL1Loss()                                           # Huber loss for better handling outliers
         
         self.avg_q_value = 0
@@ -194,7 +195,7 @@ class Agent:
         state_one_hot[state_flat] = 1
 
         # Convert the numpy array to a pytorch tensor and move it to the device (CPU/GPU)
-        return torch.FloatTensor(state_one_hot).to(self.device)
+        return torch.FloatTensor(state_one_hot).to(DEVICE)
 
     def chooseAction(self, epsilon=None):
         """
@@ -206,8 +207,8 @@ class Agent:
             # If the agent hit terminate, return None
             return None
 
-        # If epsilon value is defined, use it otherwise use exp_rate for epsilon
-        current_epsilon = epsilon if epsilon is not None else self.exp_rate
+        # If epsilon value is defined, use it otherwise use epsilon for epsilon
+        current_epsilon = epsilon if epsilon is not None else self.epsilon
 
         # Choose an action using the epsilon-greedy strategy
         if np.random.uniform(0, 1) < current_epsilon:
@@ -255,26 +256,26 @@ class Agent:
         Samples a batch and updates the Q-network using the Bellman equaiton
         """
         # If not enough experiences in memory, skip learning
-        if len(self.memory) < self.batch_size:
+        if len(self.memory) < BATCH_SIZE:
             return None
         
         # Randomly sample a batch of transitions (state, action, reward, next_state, done)
-        batch = random.sample(self.memory, self.batch_size)
+        batch = random.sample(self.memory, BATCH_SIZE)
         states, actions, rewards, next_states, dones = zip(*batch)   # Unpack
 
         # Convert lists of tensors to a single batched tensor
         states = torch.stack(states)
-        actions = torch.LongTensor(actions).to(self.device)
-        rewards = torch.FloatTensor(rewards).to(self.device)
+        actions = torch.LongTensor(actions).to(DEVICE)
+        rewards = torch.FloatTensor(rewards).to(DEVICE)
         next_states = torch.stack(next_states)
-        dones = torch.FloatTensor(dones).to(self.device)
+        dones = torch.FloatTensor(dones).to(DEVICE)
 
         # Compute Q-values for current states using the policy network
         q_values = self.policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         next_q_values = self.target_net(next_states).max(1)[0].detach()
 
         # Apply the Bellman equation
-        target_q_values = rewards + (1 - dones) * self.decay_gamma * next_q_values
+        target_q_values = rewards + (1 - dones) * GAMMA * next_q_values
 
         # Compute the loss between predicted Q-values and target Q-values
         loss = self.loss_fn(q_values, target_q_values)
@@ -342,7 +343,7 @@ class Agent:
                     self.losses.append(loss)
 
                 # Update target network periodically
-                if step_count % self.target_update_freq == 0:
+                if step_count % TARGET_UPDATE_FREQ == 0:
                     self.target_net.load_state_dict(self.policy_net.state_dict())
 
             success = 1 if self.State.state == WIN_STATE else 0
@@ -351,7 +352,7 @@ class Agent:
             self.episode_steps.append(steps)
             self.episode_successes.append(success)
 
-            self.exp_rate = max(self.min_exp_rate, self.exp_rate * self.exp_decay)
+            self.epsilon = max(EPSILON_END, self.epsilon * EPSILON_DECAY)
 
             # Log to wandb
             if i >= 1300:
@@ -359,13 +360,12 @@ class Agent:
                 "episode": i,
                 "reward": episode_reward,
                 "steps": steps,
-                "epsilon": self.exp_rate,
+                "epsilon": self.epsilon,
                 "loss": loss,
                 "train success": success,
                 "avg_train_reward": np.mean(self.episode_rewards),
                 "avg_train_reward_200": np.mean(self.episode_rewards[-200:]),
-                "avg_q_value": self.avg_q_value,
-                "avg_target_q_value": self.avg_target_q_value
+                "Q_overestimation": self.avg_q_value - self.avg_target_q_value
             })
             
 
@@ -375,12 +375,11 @@ class Agent:
                 "episode": i,
                 "reward": episode_reward,
                 "steps": steps,
-                "epsilon": self.exp_rate,
+                "epsilon": self.epsilon,
                 "loss": loss,
                 "train success": success,
                 "avg_train_reward": np.mean(self.episode_rewards),
-                "avg_q_value": self.avg_q_value,
-                "avg_target_q_value": self.avg_target_q_value
+                "Q_overestimation": self.avg_q_value - self.avg_target_q_value
             })
             
             else:
@@ -388,16 +387,15 @@ class Agent:
                 "episode": i,
                 "reward": episode_reward,
                 "steps": steps,
-                "epsilon": self.exp_rate,
+                "epsilon": self.epsilon,
                 "train success": success,
                 "avg_train_reward": np.mean(self.episode_rewards),
-                "avg_q_value": self.avg_q_value,
-                "avg_target_q_value": self.avg_target_q_value
+                "Q_overestimation": self.avg_q_value - self.avg_target_q_value
             })
 
 
             if i % 100 == 0:
-                print(f"Episode {i}, ε: {self.exp_rate:.3f}, Reward: {episode_reward:.3f}, Step: {steps}")
+                print(f"Episode {i}, ε: {self.epsilon:.3f}, Reward: {episode_reward:.3f}, Step: {steps}")
            
     def evaluate(self, num_eval_episodes=EVAL_EPISODES):
         """
@@ -470,13 +468,7 @@ def plot_policy(agent):
             policy[(i, j)] = agent.actions[np.argmax(qvals)]
 
     # Set arrow dictionaly
-    arrow_dic = {
-        "up": "↑",
-        "down": "↓",
-        "left": "←",
-        "right": "→"
-    }
-
+    arrow_dic = {"up": "↑", "down": "↓", "left": "←", "right": "→"}
     fig, ax = plt.subplots(figsize=(8,6))    # Create a Figure and Axes for plottig
     ax.set_xlim(0, COLS)                     # Set the x-axis limits from 0  to number of columns
     ax.set_ylim(0, ROWS)                     # Set the y-axis limits from 0 to number of rows
@@ -546,32 +538,31 @@ def main():
     # Hyperparameters
     config = {
         "learning_rate": LEARNING_RATE,
-        "gamma": DISCOUNT_FACTOR,
+        "gamma": GAMMA,
+        "epsilon_start": EPSILON_START,
+        "epsilon_end": EPSILON_END,
         "epsilon_decay": EPSILON_DECAY,
-        "epsilon_rate": EPSILON_RATE,
-        "episodes": NUM_EPISODES,
-        "lose_reward": LOSE_REWARD
+        "batch_size": BATCH_SIZE,
+        "target_update_freq": TARGET_UPDATE_FREQ,
+        "episodes": NUM_EPISODES
     }
 
     # Initialize W&B
     wandb.init(project=project, config=config)
-    config = wandb.config
 
-    run_name = f"learning_rate_{config.learning_rate}_gamma_{config.gamma}_epsilon_decay_{config.epsilon_decay}_epsilon_rate_{config.epsilon_rate}"
+    run_name = f"learning_rate_{LEARNING_RATE}_gamma_{GAMMA}_epsilon_decay_{EPSILON_DECAY}_epsilon_rate_{EPSILON_START}"
     
     wandb.run.name = run_name
 
     # Create Q-Learning agent and set hyperparameters from the configration
     agent = Agent()
-    agent.lr = config.learning_rate
-    agent.decay_gamma = config.gamma
-    agent.exp_decay = config.epsilon_decay
-    agent.exp_rate = config.epsilon_rate
 
     # Train
-    agent.train(config.episodes)
+    print("==== Training Double DQN ====")
+    agent.train(NUM_EPISODES)
 
     # Evalate
+    print("\n==== Evaluation ====")
     agent.evaluate()
 
     # Generate a policy map
@@ -579,26 +570,6 @@ def main():
     # Log policy map image to W&B
     wandb.log({f"policy_map": wandb.Image(fig)})
     plt.close(fig)
-
-    # Store the policy
-    policy = {}
-
-    for i in range(ROWS):
-        for j in range(COLS):
-            state = (i,j)
-
-            # Skip wall, win, and lose state
-            if state in [WALL, WIN_STATE, LOSE_STATE]:
-                continue
-
-            state_tensor = agent.state_to_tensor(state)
-            with torch.no_grad():
-                qvals = agent.policy_net(state_tensor)
-
-            best_action = agent.actions[torch.argmax(qvals).item()]
-
-            # Add it to the policy dictionary
-            policy[state] = best_action
 
     wandb.finish()
 
